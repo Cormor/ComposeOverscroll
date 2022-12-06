@@ -27,63 +27,61 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable
-fun DemoPage() {
+@Composable fun DemoPage() {
     // overscrollVertical 需放在scroll相关Modifier前面
     // 注意，可滚动的Compose中中嵌套可滚动项，需要设置高度/量算规则以帮助量算，否则量算时遇到无限高度的可滚动项目会崩溃
-    
+
     // 整体可滚动+overscroll
-    Column(Modifier.fillMaxSize().overScrollVertical().verticalScroll(rememberScrollState())) {
+    Column(Modifier.fillMaxSize().overScrollVertical(false).verticalScroll(rememberScrollState())) {
         // 普通的lazyColumn
         LazyColumn(Modifier.fillMaxWidth().weight(1f).background(Color.Gray)) {
-            items(15) {
+            items(15, { "${it}_1" }, { 1 }) {
                 Content(it)
             }
         }
         // 普通的lazyColumn
         LazyColumn(Modifier.fillMaxWidth().weight(5f).background(Color.Red).overScrollVertical()) {
-            items(20) {
+            items(20, { "${it}_2" }, { 1 }) {
                 Content(it)
             }
             item {
                 // 该LazyColumn nestedScrollToParent = false
                 LazyColumn(Modifier.fillMaxWidth().height(300.dp).background(Color.Yellow).overScrollVertical(false)) {
-                    items(75) {
+                    items(75, { "${it}_3" }, { 1 }) {
                         Content(it)
                     }
                 }
             }
-            items(10) {
+            items(10, { "${it}_4" }, { 1 }) {
                 Content(it)
             }
             item {
                 // 用来和上一个nestedScrollToParent = false的lazyColumn对比，并测试多重嵌套下的表现
                 LazyColumn(Modifier.fillMaxWidth().height(300.dp).background(Color.Cyan).overScrollVertical()) {
-                    items(25) {
+                    items(25, { "${it}_5" }, { 1 }) {
                         Content(it)
                     }
-                    item{
+                    item {
                         // 测试多重嵌套下的表现
                         LazyColumn(Modifier.fillMaxWidth().height(100.dp).background(Color.White).overScrollVertical()) {
-                            items(50) {
+                            items(50, { "${it}_6" }, { 1 }) {
                                 Content(it)
                             }
                         }
                     }
-                    items(25){
+                    items(25, { "${it}_7" }, { 1 }) {
                         Content(it)
                     }
                 }
             }
-            items(75) {
+            items(75, { "${it}_8" }, { 1 }) {
                 Content(it)
             }
         }
     }
-    FPSMonitor()
+    // FPSMonitor()
 }
 
-@Composable
-fun Content(index: Int) {
+@Composable fun Content(index: Int) {
     Text("Item $index")
 }

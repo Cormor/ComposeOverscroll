@@ -40,7 +40,7 @@ fun Modifier.overScrollVertical(
         { currentOffset, newOffset ->
             currentOffset + newOffset * 0.5f
         },
-    springSniff: Float = Spring.StiffnessMediumLow,
+    springSniff: Float = Spring.StiffnessLow,
     springDamp: Float = Spring.DampingRatioNoBouncy,
 ): Modifier = composed {
     val dispatcher = remember { NestedScrollDispatcher() }
