@@ -3,7 +3,8 @@ Overscroll any scrollable items!
 
 ## Preview
 
-https://user-images.githubusercontent.com/21119517/205872216-905bfd0a-e149-4d48-b61e-0a503b87fb08.mp4
+
+https://user-images.githubusercontent.com/21119517/205905168-180bc330-85c0-4fbe-a712-8a999e398cb4.mp4
 
 
 ## How to use
