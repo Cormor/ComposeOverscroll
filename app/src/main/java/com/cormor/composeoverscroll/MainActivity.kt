@@ -34,13 +34,13 @@ class MainActivity : ComponentActivity() {
     // 整体可滚动+overscroll
     Column(Modifier.fillMaxSize().overScrollVertical(false).verticalScroll(rememberScrollState())) {
         // 普通的lazyColumn
-        LazyColumn(Modifier.fillMaxWidth().weight(1f).background(Color.Transparent)) {
+        LazyColumn(Modifier.fillMaxWidth().weight(1f)) {
             items(15, { "${it}_1" }, { 1 }) {
                 Content(it)
             }
         }
         // 普通的lazyColumn
-        LazyColumn(Modifier.fillMaxWidth().weight(5f).background(Color.Transparent)) {
+        LazyColumn(Modifier.fillMaxWidth().weight(5f)) {
             items(20, { "${it}_2" }, { 1 }) {
                 Content(it)
             }
@@ -52,7 +52,7 @@ class MainActivity : ComponentActivity() {
                     }
                     item(contentType = "inner inner nested Item") {
                         // 多重嵌套
-                        LazyColumn(Modifier.fillMaxWidth().height(100.dp).background(Color.White).overScrollVertical(false)) {
+                        LazyColumn(Modifier.fillMaxWidth().height(100.dp).background(Color.Green).overScrollVertical(false)) {
                             items(25, { "${it}_3" }, { 1 }) {
                                 Content(it)
                             }
