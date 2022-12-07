@@ -34,13 +34,13 @@ class MainActivity : ComponentActivity() {
     // 整体可滚动+overscroll
     Column(Modifier.fillMaxSize().overScrollVertical(false).verticalScroll(rememberScrollState())) {
         // 普通的lazyColumn
-        LazyColumn(Modifier.fillMaxWidth().weight(1f).background(Color.Gray)) {
+        LazyColumn(Modifier.fillMaxWidth().weight(1f).background(Color.Transparent)) {
             items(15, { "${it}_1" }, { 1 }) {
                 Content(it)
             }
         }
         // 普通的lazyColumn
-        LazyColumn(Modifier.fillMaxWidth().weight(5f).background(Color.Red)) {
+        LazyColumn(Modifier.fillMaxWidth().weight(5f).background(Color.Transparent)) {
             items(20, { "${it}_2" }, { 1 }) {
                 Content(it)
             }

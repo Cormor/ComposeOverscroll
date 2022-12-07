@@ -18,10 +18,10 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Velocity
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.math.sign
+import kotlin.math.sqrt
 
 /**
  * OverScroll effect for scrollable Composable .
@@ -30,7 +30,7 @@ import kotlin.math.sign
  * @Author: cormor
  * @Email: cangtiansuo@gmail.com
  * @param nestedScrollToParent 是否将嵌套滚动事件分发给parent
- * @param scrollEasing 传入值分别是当前已有的overscrollOffset和新的来自手势的offset，修改它配合[springSniff]以定制滑动阻尼效果
+ * @param scrollEasing 传入值分别是当前已有的overscrollOffset和新的来自手势的offset，修改它配合[springSniff]以定制滑动阻尼效果。当前默认easing来自iOS，可以不修改！
  * @param springSniff overscroll的springSniff，为了更好的用户体验，新值不建议高于[Spring.StiffnessMediumLow]
  * @param springDamp overscroll的springDamp，一般不需要设置
  */
@@ -38,9 +38,11 @@ fun Modifier.overScrollVertical(
     nestedScrollToParent: Boolean = true,
     scrollEasing: (currentOverscrollOffset: Float, newScrollOffset: Float) -> Float =
         { currentOffset, newOffset ->
-            currentOffset + newOffset * 0.5f
+            val p = 50f
+            val ratio = (p / (sqrt(p * abs(currentOffset + newOffset).coerceAtLeast(Float.MIN_VALUE)))).coerceIn(Float.MIN_VALUE, 1f)
+            currentOffset + newOffset * ratio
         },
-    springSniff: Float = Spring.StiffnessLow,
+    springSniff: Float = 300f,
     springDamp: Float = Spring.DampingRatioNoBouncy,
 ): Modifier = composed {
     val dispatcher = remember { NestedScrollDispatcher() }
@@ -80,7 +82,10 @@ fun Modifier.overScrollVertical(
                     else                 -> available
                 }
                 scope.launch {
-                    overscrollOffset.snapTo(scrollEasing(overscrollOffset.value, realAvailable.y))
+                    when (source) {
+                        NestedScrollSource.Fling -> overscrollOffset.snapTo(overscrollOffset.value + realAvailable.y)
+                        else                     -> overscrollOffset.snapTo(scrollEasing(overscrollOffset.value, realAvailable.y))
+                    }
                 }
                 return Offset(x = 0f, y = available.y)
             }
@@ -97,13 +102,11 @@ fun Modifier.overScrollVertical(
                     nestedScrollToParent -> available - dispatcher.dispatchPostFling(consumed, available)
                     else                 -> available
                 }
-                val leftVelocity = withContext(scope.coroutineContext) {
-                    overscrollOffset.animateTo(
-                        targetValue = 0f,
-                        initialVelocity = realAvailable.y,
-                        animationSpec = spring(dampingRatio = springDamp, stiffness = springSniff, 0.5f)
-                    ).endState.velocity
-                }
+                val leftVelocity = overscrollOffset.animateTo(
+                    targetValue = 0f,
+                    initialVelocity = scrollEasing(0f, realAvailable.y),
+                    animationSpec = spring(dampingRatio = springDamp, stiffness = springSniff, 0.5f)
+                ).endState.velocity
                 return available.copy(y = available.y - leftVelocity)
             }
         }
