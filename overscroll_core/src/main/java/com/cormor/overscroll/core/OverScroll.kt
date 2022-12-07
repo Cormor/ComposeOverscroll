@@ -17,7 +17,9 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Velocity
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.math.sign
@@ -40,16 +42,21 @@ fun Modifier.overScrollVertical(
         { currentOffset, newOffset ->
             val p = 50f
             val ratio = (p / (sqrt(p * abs(currentOffset + newOffset / 2).coerceAtLeast(Float.MIN_VALUE)))).coerceIn(Float.MIN_VALUE, 1f)
-            currentOffset + newOffset * ratio
+            if (sign(currentOffset) == sign(newOffset)) {
+                currentOffset + newOffset * ratio
+            } else {
+                currentOffset + newOffset
+            }
         },
     springStiff: Float = 300f,
     springDamp: Float = Spring.DampingRatioNoBouncy,
 ): Modifier = composed {
     val dispatcher = remember { NestedScrollDispatcher() }
     val overscrollOffset = remember { Animatable(0f) }
-    
+
     val nestedConnection = remember(nestedScrollToParent, springStiff, springDamp) {
         object : NestedScrollConnection {
+            val visibilityThreshold = 0.5f
             lateinit var lastFlingAnimator: Animatable<Float, AnimationVector1D>
 
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
@@ -65,20 +72,16 @@ fun Modifier.overScrollVertical(
                 val realAvailable = available - parentConsume
 
                 val isSameDirection = sign(realAvailable.y) == sign(overscrollOffset.value)
-                return if (abs(overscrollOffset.value) > 0.5 && !isSameDirection) {
-                    // sign changed, coerce to start scrolling and exit
-                    if (sign(overscrollOffset.value) != sign(overscrollOffset.value + realAvailable.y)) {
-                        dispatcher.coroutineScope.launch { overscrollOffset.snapTo(0f) }
-                        Offset(x = 0f, y = available.y)
-                    } else {
-                        dispatcher.coroutineScope.launch {
-                            overscrollOffset.snapTo(overscrollOffset.value + realAvailable.y)
-                        }
-                        Offset(x = 0f, y = available.y)
-                    }
-                } else {
-                    parentConsume
+                if (abs(overscrollOffset.value) <= visibilityThreshold || isSameDirection) {
+                    return parentConsume
                 }
+                // sign changed, coerce to start scrolling and exit
+                if (sign(overscrollOffset.value) != sign(overscrollOffset.value + realAvailable.y)) dispatcher.coroutineScope.launch {
+                    overscrollOffset.snapTo(0f)
+                } else dispatcher.coroutineScope.launch {
+                    overscrollOffset.snapTo(scrollEasing(overscrollOffset.value, realAvailable.y))
+                }
+                return Offset(x = 0f, y = available.y)
             }
 
             override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
@@ -96,10 +99,32 @@ fun Modifier.overScrollVertical(
             }
 
             override suspend fun onPreFling(available: Velocity): Velocity {
-                return when {
+                if (this::lastFlingAnimator.isInitialized) {
+                    lastFlingAnimator.snapTo(lastFlingAnimator.value)
+                }
+                val parentConsumed = when {
                     nestedScrollToParent -> dispatcher.dispatchPreFling(available)
                     else                 -> Velocity.Zero
                 }
+                val realAvailable = available - parentConsumed
+                var leftVelocity = realAvailable.y
+                if (abs(overscrollOffset.value) >= visibilityThreshold && sign(realAvailable.y) != sign(overscrollOffset.value)) {
+                    var lastValue = 0f
+                    lastFlingAnimator = Animatable(overscrollOffset.value)
+                    dispatcher.coroutineScope.async {
+                        lastFlingAnimator.animateTo(0f, spring(springDamp, springStiff, visibilityThreshold), realAvailable.y) {
+                            if (abs(value) < visibilityThreshold || sign(value) != sign(lastValue) && lastValue != 0f) dispatcher.coroutineScope.launch {
+                                this@animateTo.stop()
+                                overscrollOffset.snapTo(0f)
+                            } else dispatcher.coroutineScope.launch {
+                                overscrollOffset.snapTo(scrollEasing(overscrollOffset.value, value - overscrollOffset.value))
+                            }
+                            lastValue = value
+                            leftVelocity = velocity
+                        }
+                    }.join()
+                }
+                return Velocity(parentConsumed.x, y = available.y - leftVelocity)
             }
 
             override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
@@ -108,11 +133,13 @@ fun Modifier.overScrollVertical(
                     else                 -> available
                 }
                 lastFlingAnimator = Animatable(overscrollOffset.value)
-                val leftVelocity = lastFlingAnimator.animateTo(0f, spring(springDamp, springStiff, 0.5f), realAvailable.y) {
-                    dispatcher.coroutineScope.launch {
-                        overscrollOffset.snapTo(scrollEasing(overscrollOffset.value, value - overscrollOffset.value))
-                    }
-                }.endState.velocity
+                val leftVelocity = withContext(dispatcher.coroutineScope.coroutineContext) {
+                    lastFlingAnimator.animateTo(0f, spring(springDamp, springStiff, visibilityThreshold), realAvailable.y) {
+                        dispatcher.coroutineScope.launch {
+                            overscrollOffset.snapTo(scrollEasing(overscrollOffset.value, value - overscrollOffset.value))
+                        }
+                    }.endState.velocity
+                }
                 return available.copy(y = available.y - leftVelocity)
             }
         }
