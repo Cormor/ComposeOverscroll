@@ -11,8 +11,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.Slider
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -30,9 +35,10 @@ class MainActivity : ComponentActivity() {
 @Composable fun DemoPage() {
     // overscrollVertical 需放在scroll相关Modifier前面
     // 注意，可滚动的Compose中嵌套可滚动项，需要设置高度/量算规则以帮助量算，否则量算时遇到无限高度的可滚动项目会崩溃
-
+    var sliderValue by remember { mutableStateOf(300f) }
     // 整体可滚动+overscroll
-    Column(Modifier.fillMaxSize().overScrollVertical(false).verticalScroll(rememberScrollState())) {
+    Column(Modifier.fillMaxSize().overScrollVertical(false, springStiff = sliderValue).verticalScroll(rememberScrollState())) {
+        Slider(sliderValue, { sliderValue = it }, Modifier.fillMaxWidth(), valueRange = 1f..1000f)
         // 普通的lazyColumn
         LazyColumn(Modifier.fillMaxWidth().weight(1f)) {
             items(15, { "${it}_1" }, { 1 }) {

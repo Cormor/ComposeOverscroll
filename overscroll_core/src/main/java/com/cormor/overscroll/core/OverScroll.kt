@@ -7,7 +7,6 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clipToBounds
@@ -48,15 +47,14 @@ fun Modifier.overScrollVertical(
 ): Modifier = composed {
     val dispatcher = remember { NestedScrollDispatcher() }
     val overscrollOffset = remember { Animatable(0f) }
-    val scope = rememberCoroutineScope()
-
-    val nestedConnection = remember {
+    
+    val nestedConnection = remember(nestedScrollToParent, springStiff, springDamp) {
         object : NestedScrollConnection {
             lateinit var lastFlingAnimator: Animatable<Float, AnimationVector1D>
 
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
                 if (this::lastFlingAnimator.isInitialized) {
-                    scope.launch {
+                    dispatcher.coroutineScope.launch {
                         lastFlingAnimator.stop()
                     }
                 }
@@ -70,10 +68,10 @@ fun Modifier.overScrollVertical(
                 return if (abs(overscrollOffset.value) > 0.5 && !isSameDirection) {
                     // sign changed, coerce to start scrolling and exit
                     if (sign(overscrollOffset.value) != sign(overscrollOffset.value + realAvailable.y)) {
-                        scope.launch { overscrollOffset.snapTo(0f) }
+                        dispatcher.coroutineScope.launch { overscrollOffset.snapTo(0f) }
                         Offset(x = 0f, y = available.y)
                     } else {
-                        scope.launch {
+                        dispatcher.coroutineScope.launch {
                             overscrollOffset.snapTo(overscrollOffset.value + realAvailable.y)
                         }
                         Offset(x = 0f, y = available.y)
@@ -88,7 +86,7 @@ fun Modifier.overScrollVertical(
                     nestedScrollToParent -> available - dispatcher.dispatchPostScroll(consumed, available, source)
                     else                 -> available
                 }
-                scope.launch {
+                dispatcher.coroutineScope.launch {
                     when (source) {
                         NestedScrollSource.Fling -> overscrollOffset.snapTo(overscrollOffset.value + realAvailable.y)
                         else                     -> overscrollOffset.snapTo(scrollEasing(overscrollOffset.value, realAvailable.y))
@@ -111,7 +109,7 @@ fun Modifier.overScrollVertical(
                 }
                 lastFlingAnimator = Animatable(overscrollOffset.value)
                 val leftVelocity = lastFlingAnimator.animateTo(0f, spring(springDamp, springStiff, 0.5f), realAvailable.y) {
-                    scope.launch {
+                    dispatcher.coroutineScope.launch {
                         overscrollOffset.snapTo(scrollEasing(overscrollOffset.value, value - overscrollOffset.value))
                     }
                 }.endState.velocity
