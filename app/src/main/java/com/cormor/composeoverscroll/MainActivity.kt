@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -35,10 +37,18 @@ class MainActivity : ComponentActivity() {
 @Composable fun DemoPage() {
     // overscrollVertical 需放在scroll相关Modifier前面
     // 注意，可滚动的Compose中嵌套可滚动项，需要设置高度/量算规则以帮助量算，否则量算时遇到无限高度的可滚动项目会崩溃
-    var sliderValue by remember { mutableStateOf(300f) }
+    var springStiff by remember { mutableStateOf(300f) }
+    var springDamp by remember { mutableStateOf(1f) }
     // 整体可滚动+overscroll
-    Column(Modifier.fillMaxSize().overScrollVertical(false, springStiff = sliderValue).verticalScroll(rememberScrollState())) {
-        Slider(sliderValue, { sliderValue = it }, Modifier.fillMaxWidth(), valueRange = 1f..1000f)
+    Column(Modifier.fillMaxSize().overScrollVertical(false, springStiff = springStiff, springDamp = springDamp).verticalScroll(rememberScrollState())) {
+        Column(Modifier.height(100.dp), Arrangement.Center, Alignment.CenterHorizontally) {
+            Text("springStiff=$springStiff")
+            Slider(springStiff, { springStiff = it }, Modifier.fillMaxWidth(), valueRange = 1f..1000f)
+        }
+        Column(Modifier.height(100.dp), Arrangement.Center, Alignment.CenterHorizontally) {
+            Text("springDamp=$springDamp")
+            Slider(springDamp, { springDamp = it }, Modifier.fillMaxWidth(), valueRange = Float.MIN_VALUE..1f)
+        }
         // 普通的lazyColumn
         LazyColumn(Modifier.fillMaxWidth().weight(1f)) {
             items(15, { "${it}_1" }, { 1 }) {
@@ -52,13 +62,23 @@ class MainActivity : ComponentActivity() {
             }
             item(contentType = "inner nested") {
                 // 该LazyColumn nestedScrollToParent = false
-                LazyColumn(Modifier.fillMaxWidth().height(300.dp).background(Color.Yellow).overScrollVertical(false)) {
+                LazyColumn(Modifier
+                    .fillMaxWidth()
+                    .height(300.dp)
+                    .background(Color.Yellow)
+                    .overScrollVertical(false, springStiff = springStiff, springDamp = springDamp)
+                ) {
                     items(15, { "${it}_3-" }, { 1 }) {
                         Content(it)
                     }
                     item(contentType = "inner inner nested Item") {
                         // 多重嵌套
-                        LazyColumn(Modifier.fillMaxWidth().height(100.dp).background(Color.Green).overScrollVertical(false)) {
+                        LazyColumn(Modifier
+                            .fillMaxWidth()
+                            .height(100.dp)
+                            .background(Color.Green)
+                            .overScrollVertical(true, springStiff = springStiff, springDamp = springDamp)
+                        ) {
                             items(25, { "${it}_3" }, { 1 }) {
                                 Content(it)
                             }
