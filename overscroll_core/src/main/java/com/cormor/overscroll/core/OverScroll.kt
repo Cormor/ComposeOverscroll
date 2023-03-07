@@ -5,25 +5,23 @@ import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.gestures.scrollable
-import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollDispatcher
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Velocity
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlin.math.abs
-import kotlin.math.roundToInt
 import kotlin.math.sign
 import kotlin.math.sqrt
 
@@ -69,10 +67,12 @@ fun Modifier.overScrollVertical(
     springStiff: Float = 300f,
     springDamp: Float = Spring.DampingRatioNoBouncy,
 ): Modifier = composed {
-    val dispatcher = remember { NestedScrollDispatcher() }
-    val overscrollY = remember { mutableStateOf(0f) }
+    val hasChangedParams = remember(nestedScrollToParent, springStiff, springDamp) { System.currentTimeMillis() }
 
-    val nestedConnection = remember(nestedScrollToParent, springStiff, springDamp) {
+    val dispatcher = remember(hasChangedParams) { NestedScrollDispatcher() }
+    var overscrollY by remember(hasChangedParams) { mutableStateOf(0f) }
+
+    val nestedConnection = remember(hasChangedParams) {
         object : NestedScrollConnection {
             /**
              * If the offset is less than this value, we consider the animation to end.
@@ -80,10 +80,10 @@ fun Modifier.overScrollVertical(
             val visibilityThreshold = 0.5f
             lateinit var lastFlingAnimator: Animatable<Float, AnimationVector1D>
 
-            var offsetY
-                get() = overscrollY.value
+            var offsetY = overscrollY
                 set(value) {
-                    overscrollY.value = value
+                    field = value
+                    overscrollY = value
                 }
 
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
@@ -134,25 +134,17 @@ fun Modifier.overScrollVertical(
                 }
                 val realAvailable = available - parentConsumed
                 var leftVelocity = realAvailable.y
+                
                 if (abs(offsetY) >= visibilityThreshold && sign(realAvailable.y) != sign(offsetY)) {
-                    var lastValue = 0f
-                    lastFlingAnimator = Animatable(offsetY)
-                    coroutineScope {
-                        async {
-                            lastFlingAnimator.animateTo(0f, spring(springDamp, springStiff, visibilityThreshold), realAvailable.y) {
-                                if (abs(value) < visibilityThreshold || sign(value) != sign(lastValue) && lastValue != 0f) {
-                                    offsetY = 0f
-                                    dispatcher.coroutineScope.launch {
-                                        this@animateTo.snapTo(0f)
-                                    }
-                                } else {
-                                    offsetY = scrollEasing(offsetY, value - offsetY)
-                                }
-                                lastValue = value
-                                leftVelocity = velocity
-                            }
-                        }.join()
+                    lastFlingAnimator = Animatable(offsetY).apply {
+                        when {
+                            leftVelocity < 0 -> updateBounds(lowerBound = 0f)
+                            else             -> updateBounds(upperBound = 0f)
+                        }
                     }
+                    leftVelocity = lastFlingAnimator.animateTo(0f, spring(springDamp, springStiff, visibilityThreshold), leftVelocity) {
+                        offsetY = scrollEasing(offsetY, value - offsetY)
+                    }.endState.velocity
                 }
                 return Velocity(parentConsumed.x, y = available.y - leftVelocity)
             }
@@ -162,21 +154,18 @@ fun Modifier.overScrollVertical(
                     nestedScrollToParent -> available - dispatcher.dispatchPostFling(consumed, available)
                     else                 -> available
                 }
-                var leftVelocity = 0f
-                coroutineScope {
-                    async {
-                        lastFlingAnimator = Animatable(offsetY)
-                        leftVelocity = lastFlingAnimator.animateTo(0f, spring(springDamp, springStiff, visibilityThreshold), realAvailable.y) {
-                            offsetY = scrollEasing(offsetY, value - offsetY)
-                        }.endState.velocity
-                    }.join()
-                }
+
+                lastFlingAnimator = Animatable(offsetY)
+                val leftVelocity: Float = lastFlingAnimator.animateTo(0f, spring(springDamp, springStiff, visibilityThreshold), realAvailable.y) {
+                        offsetY = scrollEasing(offsetY, value - offsetY)
+                    }.endState.velocity
                 return Velocity(x = 0f, y = available.y - leftVelocity)
             }
         }
     }
+
     this
         .clipToBounds()
-        .offset { IntOffset(0, overscrollY.value.roundToInt()) }
         .nestedScroll(nestedConnection, dispatcher)
+        .graphicsLayer { translationY = overscrollY }
 }

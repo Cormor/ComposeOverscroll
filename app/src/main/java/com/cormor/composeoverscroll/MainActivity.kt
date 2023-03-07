@@ -40,7 +40,9 @@ class MainActivity : ComponentActivity() {
     var springStiff by remember { mutableStateOf(300f) }
     var springDamp by remember { mutableStateOf(1f) }
     // 整体可滚动+overscroll
-    Column(Modifier.fillMaxSize().overScrollVertical(false, springStiff = springStiff, springDamp = springDamp).verticalScroll(rememberScrollState())) {
+    Column(Modifier.fillMaxSize()
+        .overScrollVertical(springStiff = springStiff, springDamp = springDamp)
+    ) {
         Column(Modifier.height(100.dp), Arrangement.Center, Alignment.CenterHorizontally) {
             Text("springStiff=$springStiff")
             Slider(springStiff, { springStiff = it }, Modifier.fillMaxWidth(), valueRange = 1f..1000f)
@@ -65,8 +67,8 @@ class MainActivity : ComponentActivity() {
                 LazyColumn(Modifier
                     .fillMaxWidth()
                     .height(300.dp)
-                    .background(Color.Yellow)
                     .overScrollVertical(false, springStiff = springStiff, springDamp = springDamp)
+                    .background(Color.Yellow)
                 ) {
                     items(15, { "${it}_3-" }, { 1 }) {
                         Content(it)
@@ -76,8 +78,8 @@ class MainActivity : ComponentActivity() {
                         LazyColumn(Modifier
                             .fillMaxWidth()
                             .height(100.dp)
+                            .overScrollVertical(false, springStiff = springStiff, springDamp = springDamp)
                             .background(Color.Green)
-                            .overScrollVertical(true, springStiff = springStiff, springDamp = springDamp)
                         ) {
                             items(25, { "${it}_3" }, { 1 }) {
                                 Content(it)
