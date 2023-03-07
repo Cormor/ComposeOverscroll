@@ -134,12 +134,12 @@ fun Modifier.overScrollVertical(
                 }
                 val realAvailable = available - parentConsumed
                 var leftVelocity = realAvailable.y
-                
+
                 if (abs(offsetY) >= visibilityThreshold && sign(realAvailable.y) != sign(offsetY)) {
                     lastFlingAnimator = Animatable(offsetY).apply {
                         when {
                             leftVelocity < 0 -> updateBounds(lowerBound = 0f)
-                            else             -> updateBounds(upperBound = 0f)
+                            leftVelocity > 0 -> updateBounds(upperBound = 0f)
                         }
                     }
                     leftVelocity = lastFlingAnimator.animateTo(0f, spring(springDamp, springStiff, visibilityThreshold), leftVelocity) {
@@ -157,8 +157,8 @@ fun Modifier.overScrollVertical(
 
                 lastFlingAnimator = Animatable(offsetY)
                 val leftVelocity: Float = lastFlingAnimator.animateTo(0f, spring(springDamp, springStiff, visibilityThreshold), realAvailable.y) {
-                        offsetY = scrollEasing(offsetY, value - offsetY)
-                    }.endState.velocity
+                    offsetY = scrollEasing(offsetY, value - offsetY)
+                }.endState.velocity
                 return Velocity(x = 0f, y = available.y - leftVelocity)
             }
         }

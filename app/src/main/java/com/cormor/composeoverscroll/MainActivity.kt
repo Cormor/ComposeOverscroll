@@ -9,9 +9,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Slider
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -24,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.cormor.overscroll.core.overScrollVertical
+import com.cormor.overscroll.core.parabolaScrollEasing
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,9 +39,11 @@ class MainActivity : ComponentActivity() {
     // 注意，可滚动的Compose中嵌套可滚动项，需要设置高度/量算规则以帮助量算，否则量算时遇到无限高度的可滚动项目会崩溃
     var springStiff by remember { mutableStateOf(300f) }
     var springDamp by remember { mutableStateOf(1f) }
+    var dragP by remember { mutableStateOf(50f) }
     // 整体可滚动+overscroll
     Column(Modifier.fillMaxSize()
-        .overScrollVertical(springStiff = springStiff, springDamp = springDamp)
+        .overScrollVertical(false, { x1, x2 -> parabolaScrollEasing(x1, x2, dragP) }, springStiff = springStiff, springDamp = springDamp)
+        .padding(32.dp,0.dp)
     ) {
         Column(Modifier.height(100.dp), Arrangement.Center, Alignment.CenterHorizontally) {
             Text("springStiff=$springStiff")
@@ -51,14 +53,18 @@ class MainActivity : ComponentActivity() {
             Text("springDamp=$springDamp")
             Slider(springDamp, { springDamp = it }, Modifier.fillMaxWidth(), valueRange = Float.MIN_VALUE..1f)
         }
+        Column(Modifier.height(100.dp), Arrangement.Center, Alignment.CenterHorizontally) {
+            Text("drag P=$dragP")
+            Slider(dragP, { dragP = it }, Modifier.fillMaxWidth(), valueRange = 1f..1000f)
+        }
         // 普通的lazyColumn
-        LazyColumn(Modifier.fillMaxWidth().weight(1f)) {
+        LazyColumn(Modifier.fillMaxWidth().weight(1f).background(Color.Cyan)) {
             items(15, { "${it}_1" }, { 1 }) {
                 Content(it)
             }
         }
         // 普通的lazyColumn
-        LazyColumn(Modifier.fillMaxWidth().weight(5f)) {
+        LazyColumn(Modifier.fillMaxWidth().weight(5f).background(Color.LightGray)) {
             items(20, { "${it}_2" }, { 1 }) {
                 Content(it)
             }
@@ -67,7 +73,7 @@ class MainActivity : ComponentActivity() {
                 LazyColumn(Modifier
                     .fillMaxWidth()
                     .height(300.dp)
-                    .overScrollVertical(false, springStiff = springStiff, springDamp = springDamp)
+                    .overScrollVertical(false, { x1, x2 -> parabolaScrollEasing(x1, x2, dragP) }, springStiff = springStiff, springDamp = springDamp)
                     .background(Color.Yellow)
                 ) {
                     items(15, { "${it}_3-" }, { 1 }) {
@@ -78,7 +84,7 @@ class MainActivity : ComponentActivity() {
                         LazyColumn(Modifier
                             .fillMaxWidth()
                             .height(100.dp)
-                            .overScrollVertical(false, springStiff = springStiff, springDamp = springDamp)
+                            .overScrollVertical(true, { x1, x2 -> parabolaScrollEasing(x1, x2, dragP) }, springStiff = springStiff, springDamp = springDamp)
                             .background(Color.Green)
                         ) {
                             items(25, { "${it}_3" }, { 1 }) {
