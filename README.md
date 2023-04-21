@@ -34,4 +34,5 @@ LazyColumn(Modifier
 ### U can call it nested! pls see the demo!
 
 This is an issue submitted to Google about this project:
+https://issuetracker.google.com/issues/276682419
 https://issuetracker.google.com/issues/261895103
