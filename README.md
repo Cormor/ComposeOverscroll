@@ -20,7 +20,9 @@ https://user-images.githubusercontent.com/21119517/205905168-180bc330-85c0-4fbe-
 Column(Modifier
     .fillMaxSize()
     .overScrollVertical() // invoke before the scrollable Modifier
+    //.overScrollHorizontal() // or this
     .verticalScroll(state = scrollState, flingBehavior = rememberOverscrollFlingBehavior { scrollState }) // must use rememberOverscrollFlingBehavior
+    //.horizontalScroll(state = scrollState, flingBehavior = rememberOverscrollFlingBehavior { scrollState }) // must use rememberOverscrollFlingBehavior
 ) {
     // ...
 }
@@ -33,7 +35,7 @@ Column(Modifier
             .fillMaxWidth()
             .overScrollVertical(), // * u should do it
             state = scrollState, // * u should do it 
-            flingBehavior = rememberOverscrollFlingBehavior { scrollState } // * u should do it after compose 1.3.x because this's a new param.
+            flingBehavior = rememberOverscrollFlingBehavior { scrollState } // * u should do it after compose 1.3.x because this's a added param.
         ) {
             // ...
         }

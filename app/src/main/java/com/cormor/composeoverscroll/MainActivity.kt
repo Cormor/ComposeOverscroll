@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.Spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Slider
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.cormor.overscroll.core.overScrollHorizontal
 import com.cormor.overscroll.core.overScrollVertical
 import com.cormor.overscroll.core.parabolaScrollEasing
 import com.cormor.overscroll.core.rememberOverscrollFlingBehavior
@@ -150,11 +151,14 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun DemoPage3() {
     val scrollState = rememberScrollState()
+    val scrollStateHorizontal = rememberScrollState()
 
     Column(Modifier
         .fillMaxSize()
-        .overScrollVertical() // invoke before the scrollable Modifier
-        .verticalScroll(state = scrollState, flingBehavior = rememberOverscrollFlingBehavior { scrollState }) // must use rememberOverscrollFlingBehavior
+        // .overScrollVertical() // invoke before the scrollable Modifier
+        .overScrollHorizontal() // invoke before the scrollable Modifier
+        // .verticalScroll(state = scrollState, flingBehavior = rememberOverscrollFlingBehavior { scrollState }) // must use rememberOverscrollFlingBehavior
+        .horizontalScroll(state = scrollStateHorizontal, flingBehavior = rememberOverscrollFlingBehavior { scrollStateHorizontal }) // must use rememberOverscrollFlingBehavior
     ) {
         repeat(150) {
             Content(it)
