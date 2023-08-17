@@ -1,25 +1,13 @@
 package com.cormor.overscroll.core
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.AnimationState
 import androidx.compose.animation.core.AnimationVector1D
-import androidx.compose.animation.core.DecayAnimationSpec
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDecay
-import androidx.compose.animation.core.exponentialDecay
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.rememberSplineBasedDecay
-import androidx.compose.foundation.gestures.FlingBehavior
-import androidx.compose.foundation.gestures.ScrollScope
-import androidx.compose.foundation.gestures.ScrollableState
 import androidx.compose.foundation.gestures.scrollable
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -44,7 +32,7 @@ import kotlin.math.sqrt
  *
  * No drag effect is applied when the scrolling direction is opposite to the currently existing overscroll offset
  *
- * Note: when [p] = 50f, its performance should be consistent with iOS
+ * Note: when [p]=50f, its performance should be consistent with iOS
  * @param currentOffset Offset value currently out of bounds
  * @param newOffset The offset of the new scroll
  * @param p Key parameters for parabolic curve calculation
@@ -62,8 +50,7 @@ fun parabolaScrollEasing(currentOffset: Float, newOffset: Float, p: Float = 50f)
 /**
  * OverScroll effect for scrollable Composable .
  *
- * - You should call it before Modifiers with similar semantics such as [Modifier.scrollable], so that nested scrolling can work normally
- * - You should use it with [rememberOverscrollFlingBehavior]
+ * You should call it before Modifiers with similar semantics such as [Modifier.scrollable], so that nested scrolling can work normally
  * @Author: cormor
  * @Email: cangtiansuo@gmail.com
  * @param nestedScrollToParent Whether to dispatch nested scroll events to parent
@@ -77,13 +64,13 @@ fun parabolaScrollEasing(currentOffset: Float, newOffset: Float, p: Float = 50f)
 fun Modifier.overScrollVertical(
     nestedScrollToParent: Boolean = true,
     scrollEasing: (currentOffset: Float, newOffset: Float) -> Float = @Stable { currentOffset, newOffset -> parabolaScrollEasing(currentOffset, newOffset) },
-    springStiff: Float = 150f,
-    springDamp: Float = 0.86f,
+    springStiff: Float = 300f,
+    springDamp: Float = Spring.DampingRatioNoBouncy,
 ): Modifier = composed {
     val hasChangedParams = remember(nestedScrollToParent, springStiff, springDamp) { System.currentTimeMillis() }
 
     val dispatcher = remember(hasChangedParams) { NestedScrollDispatcher() }
-    var overscrollY by remember(hasChangedParams) { mutableFloatStateOf(0f) }
+    var overscrollY by remember(hasChangedParams) { mutableStateOf(0f) }
 
     val nestedConnection = remember(hasChangedParams) {
         object : NestedScrollConnection {
@@ -181,57 +168,4 @@ fun Modifier.overScrollVertical(
         .clipToBounds()
         .nestedScroll(nestedConnection, dispatcher)
         .graphicsLayer { translationY = overscrollY }
-}
-
-/**
- * You should use it with [overScrollVertical]
- * @param decaySpec You can use instead [rememberSplineBasedDecay]
- * @param getScrollState Pass in your [ScrollableState], for [LazyColumn]/[LazyRow] , it's [LazyListState]
- */
-@Composable
-fun rememberOverscrollFlingBehavior(
-    decaySpec: DecayAnimationSpec<Float> = exponentialDecay(),
-    getScrollState: () -> ScrollableState,
-): FlingBehavior = remember(decaySpec) {
-    object : FlingBehavior {
-        /**
-         * - We should check it every frame of fling
-         * - Should stop fling when returning true and return the remaining speed immediately.
-         * - Without this detection, scrollBy() will continue to consume velocity,
-         * which will cause a velocity error in nestedScroll.
-         */
-        private val Float.canNotBeConsumed: Boolean // this is Velocity
-            get() {
-                val state = getScrollState()
-                return !(this < 0 && state.canScrollBackward || this > 0 && state.canScrollForward)
-            }
-
-        override suspend fun ScrollScope.performFling(initialVelocity: Float): Float {
-            if (initialVelocity.canNotBeConsumed) {
-                return initialVelocity
-            }
-            return if (abs(initialVelocity) > 1f) {
-                var velocityLeft = initialVelocity
-                var lastValue = 0f
-                AnimationState(
-                    initialValue = 0f,
-                    initialVelocity = initialVelocity,
-                ).animateDecay(decaySpec) {
-                    if (velocityLeft.canNotBeConsumed) {
-                        cancelAnimation()
-                        return@animateDecay
-                    }
-                    val delta = value - lastValue
-                    val consumed = scrollBy(delta)
-                    lastValue = value
-                    velocityLeft = this.velocity
-                    // avoid rounding errors and stop if anything is unconsumed
-                    if (abs(delta - consumed) > 0.5f) this.cancelAnimation()
-                }
-                velocityLeft
-            } else {
-                initialVelocity
-            }
-        }
-    }
 }
