@@ -3,6 +3,8 @@ package com.cormor.composeoverscroll
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.Spring
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -11,11 +13,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.Slider
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -24,12 +27,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.cormor.overscroll.core.overScrollVertical
 import com.cormor.overscroll.core.parabolaScrollEasing
+import com.cormor.overscroll.core.rememberOverscrollFlingBehavior
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             DemoPage()
+            // DemoPage2()
         }
     }
 }
@@ -37,17 +42,17 @@ class MainActivity : ComponentActivity() {
 @Composable fun DemoPage() {
     // overscrollVertical 需放在scroll相关Modifier前面
     // 注意，可滚动的Compose中嵌套可滚动项，需要设置高度/量算规则以帮助量算，否则量算时遇到无限高度的可滚动项目会崩溃
-    var springStiff by remember { mutableStateOf(300f) }
-    var springDamp by remember { mutableStateOf(1f) }
-    var dragP by remember { mutableStateOf(50f) }
+    var springStiff by remember { mutableFloatStateOf(Spring.StiffnessLow) }
+    var springDamp by remember { mutableFloatStateOf(Spring.DampingRatioLowBouncy) }
+    var dragP by remember { mutableFloatStateOf(50f) }
     // 整体可滚动+overscroll
     Column(Modifier.fillMaxSize()
-        .overScrollVertical(false, { x1, x2 -> parabolaScrollEasing(x1, x2, dragP) }, springStiff = springStiff, springDamp = springDamp)
-        .padding(32.dp,0.dp)
+        .overScrollVertical(true, { x1, x2 -> parabolaScrollEasing(x1, x2, dragP) }, springStiff = springStiff, springDamp = springDamp)
+        .padding(32.dp, 0.dp)
     ) {
         Column(Modifier.height(100.dp), Arrangement.Center, Alignment.CenterHorizontally) {
             Text("springStiff=$springStiff")
-            Slider(springStiff, { springStiff = it }, Modifier.fillMaxWidth(), valueRange = 1f..1000f)
+            Slider(springStiff, { springStiff = it }, Modifier.fillMaxWidth(), valueRange = 1f..500f)
         }
         Column(Modifier.height(100.dp), Arrangement.Center, Alignment.CenterHorizontally) {
             Text("springDamp=$springDamp")
@@ -55,37 +60,45 @@ class MainActivity : ComponentActivity() {
         }
         Column(Modifier.height(100.dp), Arrangement.Center, Alignment.CenterHorizontally) {
             Text("drag P=$dragP")
-            Slider(dragP, { dragP = it }, Modifier.fillMaxWidth(), valueRange = 1f..1000f)
+            Slider(dragP, { dragP = it }, Modifier.fillMaxWidth(), valueRange = 1f..500f)
         }
+        val scrollState1 = rememberLazyListState()
         // 普通的lazyColumn
-        LazyColumn(Modifier.fillMaxWidth().weight(1f).background(Color.Cyan)) {
+        LazyColumn(Modifier.fillMaxWidth().weight(1f).background(Color.Cyan)
+            .overScrollVertical(false, { x1, x2 -> parabolaScrollEasing(x1, x2, dragP) }, springStiff = springStiff, springDamp = springDamp),
+            state= scrollState1,
+            flingBehavior = rememberOverscrollFlingBehavior { scrollState1 }
+        ) {
             items(15, { "${it}_1" }, { 1 }) {
                 Content(it)
             }
         }
+        val scrollState2 = rememberLazyListState()
         // 普通的lazyColumn
-        LazyColumn(Modifier.fillMaxWidth().weight(5f).background(Color.LightGray)) {
+        LazyColumn(Modifier.fillMaxWidth().weight(5f).background(Color.LightGray), state= scrollState2, flingBehavior = rememberOverscrollFlingBehavior { scrollState2 }) {
             items(20, { "${it}_2" }, { 1 }) {
                 Content(it)
             }
             item(contentType = "inner nested") {
                 // 该LazyColumn nestedScrollToParent = false
+                val scrollState3 = rememberLazyListState()
                 LazyColumn(Modifier
                     .fillMaxWidth()
                     .height(300.dp)
                     .overScrollVertical(false, { x1, x2 -> parabolaScrollEasing(x1, x2, dragP) }, springStiff = springStiff, springDamp = springDamp)
-                    .background(Color.Yellow)
+                    .background(Color.Yellow), state= scrollState3, flingBehavior = rememberOverscrollFlingBehavior { scrollState3 }
                 ) {
                     items(15, { "${it}_3-" }, { 1 }) {
                         Content(it)
                     }
                     item(contentType = "inner inner nested Item") {
                         // 多重嵌套
+                        val scrollState4 = rememberLazyListState()
                         LazyColumn(Modifier
                             .fillMaxWidth()
                             .height(100.dp)
                             .overScrollVertical(true, { x1, x2 -> parabolaScrollEasing(x1, x2, dragP) }, springStiff = springStiff, springDamp = springDamp)
-                            .background(Color.Green)
+                            .background(Color.Green), state= scrollState4, flingBehavior = rememberOverscrollFlingBehavior { scrollState4 }
                         ) {
                             items(25, { "${it}_3" }, { 1 }) {
                                 Content(it)
@@ -107,4 +120,27 @@ class MainActivity : ComponentActivity() {
 
 @Composable fun Content(index: Int) {
     Text("Item $index")
+}
+
+@Composable fun DemoPage2() {
+    Column(Modifier.fillMaxSize()
+        .overScrollVertical() // 让不可滚动的column也能响应内部组件的嵌套滚动效果
+        .padding(32.dp, 0.dp)
+    ) {
+        val scrollState = rememberLazyListState()
+        
+        LazyColumn(Modifier
+            .fillMaxWidth()
+            .weight(1f)
+            .background(Color.Cyan)
+            .overScrollVertical(), // * u should do it
+            state = scrollState, // * u should do it
+            flingBehavior = rememberOverscrollFlingBehavior { scrollState } // * u should do it
+        ) {
+            items(150, { "${it}_1" }, { 1 }) {
+                Content(it)
+            }
+        }
+    }
+    FPSMonitor()
 }

@@ -3,22 +3,8 @@ package com.cormor.composeoverscroll
 import android.content.Context
 import android.util.AttributeSet
 import android.widget.LinearLayout
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBox
-import androidx.compose.material.icons.rounded.ThumbUp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -27,17 +13,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameMillis
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
-import kotlin.random.Random
 
 class FPSMonitor : LinearLayout {
     constructor(context: Context) : super(context)
@@ -61,12 +44,12 @@ private const val greenFPS = 57 // 帧数小于等于x显示为红色
  */
 enum class FPSCountMethod {
     /**
-     * 统计固定x帧的平均用时，反推帧数
+     * 统计一段时间内生成了多少帧，得到帧数
      */
     FixedInterval,
 
     /**
-     * 统计一段时间内生成了多少帧，得到帧数
+     * 统计固定x帧的平均用时，反推帧数
      */
     FixedFrameCount,
 
