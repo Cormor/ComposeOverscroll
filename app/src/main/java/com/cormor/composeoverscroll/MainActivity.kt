@@ -35,9 +35,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            // DemoPage()
+            DemoPage()
             // DemoPage2()
-            DemoPage3()
+            // DemoPage3()
         }
     }
 }
@@ -79,41 +79,7 @@ class MainActivity : ComponentActivity() {
         val scrollState2 = rememberLazyListState()
         // 普通的lazyColumn
         LazyColumn(Modifier.fillMaxWidth().weight(5f).background(Color.LightGray), state = scrollState2, flingBehavior = rememberOverscrollFlingBehavior { scrollState2 }) {
-            items(20, { "${it}_2" }, { 1 }) {
-                Content(it)
-            }
-            item(contentType = "inner nested") {
-                // 该LazyColumn nestedScrollToParent = false
-                val scrollState3 = rememberLazyListState()
-                LazyColumn(Modifier
-                    .fillMaxWidth()
-                    .height(300.dp)
-                    .overScrollVertical(false, { x1, x2 -> parabolaScrollEasing(x1, x2, dragP) }, springStiff = springStiff, springDamp = springDamp)
-                    .background(Color.Yellow), state = scrollState3, flingBehavior = rememberOverscrollFlingBehavior { scrollState3 }
-                ) {
-                    items(15, { "${it}_3-" }, { 1 }) {
-                        Content(it)
-                    }
-                    item(contentType = "inner inner nested Item") {
-                        // 多重嵌套
-                        val scrollState4 = rememberLazyListState()
-                        LazyColumn(Modifier
-                            .fillMaxWidth()
-                            .height(100.dp)
-                            .overScrollVertical(true, { x1, x2 -> parabolaScrollEasing(x1, x2, dragP) }, springStiff = springStiff, springDamp = springDamp)
-                            .background(Color.Green), state = scrollState4, flingBehavior = rememberOverscrollFlingBehavior { scrollState4 }
-                        ) {
-                            items(25, { "${it}_3" }, { 1 }) {
-                                Content(it)
-                            }
-                        }
-                    }
-                    items(15, { "${it}_3+" }, { 1 }) {
-                        Content(it)
-                    }
-                }
-            }
-            items(50, { "${it}_4" }, { 1 }) {
+            items(50, { "${it}_2" }, { 1 }) {
                 Content(it)
             }
         }
