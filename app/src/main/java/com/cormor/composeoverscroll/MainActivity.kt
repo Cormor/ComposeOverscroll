@@ -4,7 +4,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.Spring
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,6 +13,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Slider
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -33,8 +34,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            DemoPage()
+            // DemoPage()
             // DemoPage2()
+            DemoPage3()
         }
     }
 }
@@ -66,7 +68,7 @@ class MainActivity : ComponentActivity() {
         // 普通的lazyColumn
         LazyColumn(Modifier.fillMaxWidth().weight(1f).background(Color.Cyan)
             .overScrollVertical(false, { x1, x2 -> parabolaScrollEasing(x1, x2, dragP) }, springStiff = springStiff, springDamp = springDamp),
-            state= scrollState1,
+            state = scrollState1,
             flingBehavior = rememberOverscrollFlingBehavior { scrollState1 }
         ) {
             items(15, { "${it}_1" }, { 1 }) {
@@ -75,7 +77,7 @@ class MainActivity : ComponentActivity() {
         }
         val scrollState2 = rememberLazyListState()
         // 普通的lazyColumn
-        LazyColumn(Modifier.fillMaxWidth().weight(5f).background(Color.LightGray), state= scrollState2, flingBehavior = rememberOverscrollFlingBehavior { scrollState2 }) {
+        LazyColumn(Modifier.fillMaxWidth().weight(5f).background(Color.LightGray), state = scrollState2, flingBehavior = rememberOverscrollFlingBehavior { scrollState2 }) {
             items(20, { "${it}_2" }, { 1 }) {
                 Content(it)
             }
@@ -86,7 +88,7 @@ class MainActivity : ComponentActivity() {
                     .fillMaxWidth()
                     .height(300.dp)
                     .overScrollVertical(false, { x1, x2 -> parabolaScrollEasing(x1, x2, dragP) }, springStiff = springStiff, springDamp = springDamp)
-                    .background(Color.Yellow), state= scrollState3, flingBehavior = rememberOverscrollFlingBehavior { scrollState3 }
+                    .background(Color.Yellow), state = scrollState3, flingBehavior = rememberOverscrollFlingBehavior { scrollState3 }
                 ) {
                     items(15, { "${it}_3-" }, { 1 }) {
                         Content(it)
@@ -98,7 +100,7 @@ class MainActivity : ComponentActivity() {
                             .fillMaxWidth()
                             .height(100.dp)
                             .overScrollVertical(true, { x1, x2 -> parabolaScrollEasing(x1, x2, dragP) }, springStiff = springStiff, springDamp = springDamp)
-                            .background(Color.Green), state= scrollState4, flingBehavior = rememberOverscrollFlingBehavior { scrollState4 }
+                            .background(Color.Green), state = scrollState4, flingBehavior = rememberOverscrollFlingBehavior { scrollState4 }
                         ) {
                             items(25, { "${it}_3" }, { 1 }) {
                                 Content(it)
@@ -128,7 +130,7 @@ class MainActivity : ComponentActivity() {
         .padding(32.dp, 0.dp)
     ) {
         val scrollState = rememberLazyListState()
-        
+
         LazyColumn(Modifier
             .fillMaxWidth()
             .weight(1f)
@@ -143,4 +145,19 @@ class MainActivity : ComponentActivity() {
         }
     }
     FPSMonitor()
+}
+
+@Composable
+fun DemoPage3() {
+    val scrollState = rememberScrollState()
+
+    Column(Modifier
+        .fillMaxSize()
+        .overScrollVertical() // invoke before the scrollable Modifier
+        .verticalScroll(state = scrollState, flingBehavior = rememberOverscrollFlingBehavior { scrollState }) // must use rememberOverscrollFlingBehavior
+    ) {
+        repeat(150) {
+            Content(it)
+        }
+    }
 }
