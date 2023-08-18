@@ -172,10 +172,7 @@ fun Modifier.overScrollOutOfBound(
                     nestedScrollToParent -> available - dispatcher.dispatchPostScroll(consumed, available, source)
                     else                 -> available
                 }
-                when (source) {
-                    NestedScrollSource.Fling -> offset += if (isVertical) realAvailable.y else realAvailable.x
-                    else                     -> offset = scrollEasing(offset, if (isVertical) realAvailable.y else realAvailable.x)
-                }
+                offset = scrollEasing(offset, if (isVertical) realAvailable.y else realAvailable.x)
                 return if (isVertical) {
                     Offset(x = available.x - realAvailable.x, y = available.y)
                 } else {

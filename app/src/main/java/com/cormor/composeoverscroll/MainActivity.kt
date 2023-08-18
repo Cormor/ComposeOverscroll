@@ -63,7 +63,7 @@ class MainActivity : ComponentActivity() {
         }
         Column(Modifier.height(100.dp), Arrangement.Center, Alignment.CenterHorizontally) {
             Text("drag P=$dragP")
-            Slider(dragP, { dragP = it }, Modifier.fillMaxWidth(), valueRange = 1f..500f)
+            Slider(dragP, { dragP = it }, Modifier.fillMaxWidth(), valueRange = 0.1f..500f)
         }
         val scrollState1 = rememberLazyListState()
         // 普通的lazyColumn
