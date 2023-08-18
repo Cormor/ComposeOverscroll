@@ -78,8 +78,28 @@ class MainActivity : ComponentActivity() {
         }
         val scrollState2 = rememberLazyListState()
         // 普通的lazyColumn
-        LazyColumn(Modifier.fillMaxWidth().weight(5f).background(Color.LightGray), state = scrollState2, flingBehavior = rememberOverscrollFlingBehavior { scrollState2 }) {
+        LazyColumn(Modifier.fillMaxWidth().weight(5f).background(Color.LightGray)
+            .overScrollVertical(true, { x1, x2 -> parabolaScrollEasing(x1, x2, dragP) }, springStiff = springStiff, springDamp = springDamp),
+            state = scrollState2, flingBehavior = rememberOverscrollFlingBehavior { scrollState2 }) {
             items(50, { "${it}_2" }, { 1 }) {
+                Content(it)
+            }
+            item {
+                val scrollStateInner = rememberLazyListState()
+                LazyColumn(Modifier
+                    .fillMaxWidth()
+                    .height(300.dp)
+                    .background(Color.Green)
+                    .overScrollVertical(), // * u should do it
+                    state = scrollStateInner, // * u should do it
+                    flingBehavior = rememberOverscrollFlingBehavior { scrollStateInner } // * u should do it
+                ) {
+                    items(150, { "${it}_1" }, { 1 }) {
+                        Content(it)
+                    }
+                }
+            }
+            items(50, { "${it}_1" }, { 1 }) {
                 Content(it)
             }
         }

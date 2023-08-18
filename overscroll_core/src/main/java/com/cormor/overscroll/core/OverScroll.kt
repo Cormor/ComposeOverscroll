@@ -148,17 +148,17 @@ fun Modifier.overScrollOutOfBound(
                 if (abs(offset) <= visibilityThreshold || isSameDirection) {
                     return available - realAvailable
                 }
-                val offsetAtLast = offset + realOffset
+                val offsetAtLast = scrollEasing(offset, realOffset)
                 // sign changed, coerce to start scrolling and exit
                 return if (sign(offset) != sign(offsetAtLast)) {
                     offset = 0f
                     if (isVertical) {
-                        Offset(x = available.x - realAvailable.x, y = offsetAtLast)
+                        Offset(x = available.x - realAvailable.x, y = available.y - realAvailable.y + offsetAtLast)
                     } else {
-                        Offset(x = offsetAtLast, y = available.y - realAvailable.y)
+                        Offset(x = available.x - realAvailable.x + offsetAtLast, y = available.y - realAvailable.y)
                     }
                 } else {
-                    offset = scrollEasing(offset, realOffset)
+                    offset = offsetAtLast
                     if (isVertical) {
                         Offset(x = available.x - realAvailable.x, y = available.y)
                     } else {
@@ -219,13 +219,13 @@ fun Modifier.overScrollOutOfBound(
                 }
 
                 lastFlingAnimator = Animatable(offset)
-                val leftVelocity: Float = lastFlingAnimator.animateTo(0f, spring(springDamp, springStiff, visibilityThreshold), realAvailable.y) {
+                lastFlingAnimator.animateTo(0f, spring(springDamp, springStiff, visibilityThreshold), realAvailable.y) {
                     offset = scrollEasing(offset, value - offset)
-                }.endState.velocity
+                }
                 return if (isVertical) {
-                    Velocity(x = available.x - realAvailable.x, y = available.y - leftVelocity)
+                    Velocity(x = available.x - realAvailable.x, y = available.y)
                 } else {
-                    Velocity(x = available.x - leftVelocity, y = available.y - realAvailable.y)
+                    Velocity(x = available.x, y = available.y - realAvailable.y)
                 }
             }
         }
