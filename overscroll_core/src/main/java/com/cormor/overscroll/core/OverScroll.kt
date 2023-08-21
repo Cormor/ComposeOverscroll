@@ -245,7 +245,7 @@ fun Modifier.overScrollOutOfBound(
 fun rememberOverscrollFlingBehavior(
     decaySpec: DecayAnimationSpec<Float> = exponentialDecay(),
     getScrollState: () -> ScrollableState,
-): FlingBehavior = remember(decaySpec) {
+): FlingBehavior = remember(decaySpec, getScrollState) {
     object : FlingBehavior {
         /**
          * - We should check it every frame of fling
