@@ -270,16 +270,14 @@ fun rememberOverscrollFlingBehavior(
                     initialValue = 0f,
                     initialVelocity = initialVelocity,
                 ).animateDecay(decaySpec) {
-                    if (velocityLeft.canNotBeConsumed) {
-                        cancelAnimation()
-                        return@animateDecay
-                    }
                     val delta = value - lastValue
                     val consumed = scrollBy(delta)
                     lastValue = value
                     velocityLeft = this.velocity
                     // avoid rounding errors and stop if anything is unconsumed
-                    if (abs(delta - consumed) > 0.5f) this.cancelAnimation()
+                    if (abs(delta - consumed) > 0.5f || velocityLeft.canNotBeConsumed) {
+                        cancelAnimation()
+                    }
                 }
                 velocityLeft
             } else {
