@@ -153,9 +153,9 @@ fun Modifier.overScrollOutOfBound(
                 return if (sign(offset) != sign(offsetAtLast)) {
                     offset = 0f
                     if (isVertical) {
-                        Offset(x = available.x - realAvailable.x, y = available.y - realAvailable.y + offset + realOffset)
+                        Offset(x = available.x - realAvailable.x, y = available.y - realAvailable.y + realOffset)
                     } else {
-                        Offset(x = available.x - realAvailable.x + +offset + realOffset, y = available.y - realAvailable.y)
+                        Offset(x = available.x - realAvailable.x + realOffset, y = available.y - realAvailable.y)
                     }
                 } else {
                     offset = offsetAtLast
