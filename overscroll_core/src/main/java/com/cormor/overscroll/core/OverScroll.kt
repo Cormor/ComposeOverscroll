@@ -1,6 +1,7 @@
+@file:Suppress("unused", "RedundantValueArgument")
+
 package com.cormor.overscroll.core
 
-import android.os.SystemClock
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationState
 import androidx.compose.animation.core.AnimationVector1D
@@ -22,6 +23,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -64,7 +66,12 @@ fun parabolaScrollEasing(currentOffset: Float, newOffset: Float, p: Float = 50f,
     }
 }
 
-private val DefaultParabolaScrollEasing: (currentOffset: Float, newOffset: Float) -> Float
+/**
+ * Linear, you probably wouldn't think of using it.
+ */
+val LinearScrollEasing: (currentOffset: Float, newOffset: Float) -> Float = { currentOffset, newOffset -> currentOffset + newOffset }
+
+internal val DefaultParabolaScrollEasing: (currentOffset: Float, newOffset: Float) -> Float
     @Composable
     get() {
         val density = LocalDensity.current.density
@@ -73,8 +80,8 @@ private val DefaultParabolaScrollEasing: (currentOffset: Float, newOffset: Float
         }
     }
 
-private const val OutBoundSpringStiff = 150f
-private const val OutBoundSpringDamp = 0.86f
+internal const val OutBoundSpringStiff = 150f
+internal const val OutBoundSpringDamp = 0.86f
 
 /**
  * @see overScrollOutOfBound
@@ -84,7 +91,7 @@ fun Modifier.overScrollVertical(
     scrollEasing: ((currentOffset: Float, newOffset: Float) -> Float)? = null,
     springStiff: Float = OutBoundSpringStiff,
     springDamp: Float = OutBoundSpringDamp,
-): Modifier = composed { overScrollOutOfBound(isVertical = true, nestedScrollToParent, scrollEasing ?: DefaultParabolaScrollEasing, springStiff, springDamp) }
+): Modifier = overScrollOutOfBound(isVertical = true, nestedScrollToParent, scrollEasing, springStiff, springDamp)
 
 /**
  * @see overScrollOutOfBound
@@ -94,7 +101,7 @@ fun Modifier.overScrollHorizontal(
     scrollEasing: ((currentOffset: Float, newOffset: Float) -> Float)? = null,
     springStiff: Float = OutBoundSpringStiff,
     springDamp: Float = OutBoundSpringDamp,
-): Modifier = composed { overScrollOutOfBound(isVertical = false, nestedScrollToParent, scrollEasing ?: DefaultParabolaScrollEasing, springStiff, springDamp) }
+): Modifier = overScrollOutOfBound(isVertical = false, nestedScrollToParent, scrollEasing, springStiff, springDamp)
 
 /**
  * OverScroll effect for scrollable Composable .
@@ -112,19 +119,23 @@ fun Modifier.overScrollHorizontal(
  * @param springStiff springStiff for overscroll effect，For better user experience, the new value is not recommended to be higher than[Spring.StiffnessMediumLow]
  * @param springDamp springDamp for overscroll effect，generally do not need to set
  */
+@Suppress("NAME_SHADOWING")
 fun Modifier.overScrollOutOfBound(
     isVertical: Boolean = true,
     nestedScrollToParent: Boolean = true,
-    scrollEasing: (currentOffset: Float, newOffset: Float) -> Float,
+    scrollEasing: ((currentOffset: Float, newOffset: Float) -> Float)?,
     springStiff: Float = OutBoundSpringStiff,
     springDamp: Float = OutBoundSpringDamp,
 ): Modifier = composed {
-    val hasChangedParams = remember(nestedScrollToParent, springStiff, springDamp, isVertical) { SystemClock.elapsedRealtimeNanos() }
+    val nestedScrollToParent by rememberUpdatedState(nestedScrollToParent)
+    val scrollEasing by rememberUpdatedState(scrollEasing ?: DefaultParabolaScrollEasing)
+    val springStiff by rememberUpdatedState(springStiff)
+    val springDamp by rememberUpdatedState(springDamp)
+    val isVertical by rememberUpdatedState(isVertical)
+    val dispatcher = remember { NestedScrollDispatcher() }
+    var offset by remember { mutableFloatStateOf(0f) }
 
-    val dispatcher = remember(hasChangedParams) { NestedScrollDispatcher() }
-    var offset by remember(hasChangedParams) { mutableFloatStateOf(0f) }
-
-    val nestedConnection = remember(hasChangedParams) {
+    val nestedConnection = remember {
         object : NestedScrollConnection {
             /**
              * If the offset is less than this value, we consider the animation to end.
@@ -133,6 +144,10 @@ fun Modifier.overScrollOutOfBound(
             lateinit var lastFlingAnimator: Animatable<Float, AnimationVector1D>
 
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                // Found fling behavior in the wrong direction.
+                if (source != NestedScrollSource.Drag) {
+                    return dispatcher.dispatchPreScroll(available, source)
+                }
                 if (::lastFlingAnimator.isInitialized && lastFlingAnimator.isRunning) {
                     dispatcher.coroutineScope.launch {
                         lastFlingAnimator.stop()
@@ -168,6 +183,10 @@ fun Modifier.overScrollOutOfBound(
             }
 
             override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+                // Found fling behavior in the wrong direction.
+                if (source != NestedScrollSource.Drag) {
+                    return dispatcher.dispatchPreScroll(available, source)
+                }
                 val realAvailable = when {
                     nestedScrollToParent -> available - dispatcher.dispatchPostScroll(consumed, available, source)
                     else                 -> available
@@ -216,7 +235,7 @@ fun Modifier.overScrollOutOfBound(
                 }
 
                 lastFlingAnimator = Animatable(offset)
-                lastFlingAnimator.animateTo(0f, spring(springDamp, springStiff, visibilityThreshold), realAvailable.y) {
+                lastFlingAnimator.animateTo(0f, spring(springDamp, springStiff, visibilityThreshold), if (isVertical) realAvailable.y else realAvailable.x) {
                     offset = scrollEasing(offset, value - offset)
                 }
                 return if (isVertical) {
