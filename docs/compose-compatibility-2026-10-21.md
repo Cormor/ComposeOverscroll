@@ -2,17 +2,17 @@
 
 **核查日期：** 2026-10-21
 **仓库：** [`Cormor/ComposeOverscroll`](https://github.com/Cormor/ComposeOverscroll)
-**目标版本：** `2.0.0`（本地提交；尚未推送到 GitHub）
+**目标版本：** `2.0.0`（tag 和 `main` 已推送；提交 `22906fd`）
 
 ## 结论
 
 本项目已升级到 Jetpack Compose **1.12.1**，并在本机完成库 release 构建、Maven 发布、独立消费者编译和 API 34 模拟器滚动验证。库的 GitHub/JitPack 依赖坐标为：
 
 ```text
-com.github.Cormor.ComposeOverscroll:overscroll_core:2.0.0
+com.github.Cormor:ComposeOverscroll:2.0.0
 ```
 
-本地验证已证明 release AAR 可构建，且消费者不引用本仓库源码也能解析并编译该库。GitHub tag 尚未推送，JitPack 远端构建和实际远端坐标解析还未验证；README 已写明这一前提。
+本地 release AAR、JitPack 远端发布和独立 Android 消费者编译均已通过。JitPack 的模块坐标 `com.github.Cormor.ComposeOverscroll:overscroll_core:2.0.0` 在成功构建后仍返回 404，因此公开用法改为已验证可用的根项目聚合坐标。Google Issue Tracker 页面在本次环境中未能显示问题状态，是否已修复仍无法确认。
 
 ## 最新稳定版和构建要求
 
@@ -41,11 +41,20 @@ com.github.Cormor.ComposeOverscroll:overscroll_core:2.0.0
 
 - `gradlew wrapper --gradle-version 9.6.0 --distribution-type bin`：**通过**。wrapper 任务成功；随后 `gradlew --version` 显示 Gradle 9.6.0、JBR 21.0.10。
 - `:overscroll_core:assembleRelease`：**通过**。使用 Compose 1.12.1 编译、打包 release AAR；编译期间没有 Compose API 错误。
-- `:overscroll_core:publishReleasePublicationToMavenLocal`：**通过**。在仓库 `build/` 下的临时 Maven 仓库生成 `overscroll_core-2.0.0.aar`、POM、Gradle Module Metadata 和 sources JAR。POM 中的坐标与 README 示例一致，Compose API 依赖版本均为 1.12.1。
-- 独立消费者 APK：**通过**。临时 Android app 只通过本地 Maven 仓库使用 `com.github.Cormor.ComposeOverscroll:overscroll_core:2.0.0`，没有引用 `:overscroll_core` project dependency 或本仓库源码；消费者代码调用了 `Modifier.overScrollVertical()`。首次用 `minSdk 21` 打包时，Manifest 合并报告 Compose `foundation-layout` 要求 API 23；库最低版本据此改为 23。重新发布 AAR 并将消费者 `minSdk` 设为 23 后，`assembleDebug` 成功；API 21–22 不兼容已由该检查确认。
+- `:overscroll_core:publishReleasePublicationToMavenLocal`：**通过**。在仓库 `build/` 下的临时 Maven 仓库生成 `overscroll_core-2.0.0.aar`、POM、Gradle Module Metadata 和 sources JAR；本地发布坐标为 `com.github.Cormor.ComposeOverscroll:overscroll_core:2.0.0`，POM 中的 Compose API 依赖版本均为 1.12.1。
+- 独立本地 Maven 消费者 APK：**通过**。临时 Android app 只通过仓库 `build/` 下的本地 Maven 仓库使用发布模块，没有引用 `:overscroll_core` project dependency 或本仓库源码；消费者代码调用了 `Modifier.overScrollVertical()`。首次用 `minSdk 21` 打包时，Manifest 合并报告 Compose `foundation-layout` 要求 API 23；库最低版本据此改为 23。重新发布 AAR 并将消费者 `minSdk` 设为 23 后，`assembleDebug` 成功；API 21–22 不兼容已由该检查确认。
+- 独立 JitPack 消费者 APK：**通过**。临时 Android app 的依赖仓库只加入 JitPack 和 Android 常用仓库，依赖 `com.github.Cormor:ComposeOverscroll:2.0.0`，源码直接调用 `Modifier.overScrollVertical()`，没有项目依赖或本仓库源码引用；`:app:assembleDebug` 成功。JitPack 构建日志显示 `BUILD SUCCESSFUL`。但对应的模块路径 `com.github.Cormor.ComposeOverscroll:overscroll_core:2.0.0` 在 JitPack 上没有解析成功（POM 请求返回 404，API 的 modules 列表为空），因此 README 不再给出该模块坐标。
 - `:app:assembleDebug`：**通过**。Compose 1.12.1 下 demo app 成功构建。
-- API 34（Android 14）模拟器：**通过基础滚动和一次边界回弹检查**。debug app 安装启动后，灰色 LazyColumn 从可见的 `Item 0`–`Item 22` 滑到 `Item 30`–`Item 49`。重新安装当前构建后，在灰色列表顶部向下拖动，外层内容随之下移；释放后内容回到原位，应用进程仍在运行，最近 400 条 `AndroidRuntime:E` 查询没有错误输出。这只覆盖当前 demo 的一次纵向嵌套边界操作；没有验证 API 37 模拟器、最低 API 23 设备、所有嵌套滚动边界或 JitPack 远端构建，也没有运行自动化测试。
+- API 34（Android 14）模拟器：**通过基础滚动和一次边界回弹检查**。debug app 安装启动后，灰色 LazyColumn 从可见的 `Item 0`–`Item 22` 滑到 `Item 30`–`Item 49`。重新安装当前构建后，在灰色列表顶部向下拖动，外层内容随之下移；释放后内容回到原位，应用进程仍在运行，最近 400 条 `AndroidRuntime:E` 查询没有错误输出。这只覆盖当前 demo 的一次纵向嵌套边界操作；没有验证 API 37 模拟器、最低 API 23 设备或所有嵌套滚动边界，也没有运行自动化测试。
 - Gradle 首次检查 SDK 时自动创建了 Android SDK Platform 37.0（API 37，Extension Level 22）和 Build-Tools 36.0.0。后续构建通过 `android.builder.sdkDownload=false` 禁止继续自动下载；本次没有删除这些 SDK 文件。
+
+## Google Issue Tracker 状态核查
+
+README 旧版列出了 [问题 276682419](https://issuetracker.google.com/issues/276682419) 和 [问题 261895103](https://issuetracker.google.com/issues/261895103)，并称 `1.4.0-beta02` 起有嵌套手势分发错误。全仓文件清单里没有 README 所称的测试模块，因此本次没有该失败用例的仓库内复现证据；README 已移除这段未经本仓验证的旧说明。本次于 2026-10-21 重新打开两条链接并按问题编号搜索：问题 261895103 的页面只显示登录入口，问题 276682419 的链接无法打开；按编号检索也没有取得这两条问题的状态。因此，本次**无法确认 Google 是否已修复**，也不能确认问题当前是 open、fixed、duplicate 或其他状态。
+
+Google 的访问说明指出，未登录用户只能查看公开可见的问题，Issue Tracker 也按项目和问题权限控制可见范围。本次访问结果只说明当前环境没有取得问题详情，不足以证明问题本身已关闭或仍然开放。[访问 Issue Tracker](https://developers.google.com/issue-tracker/guides/access-ui) [Issue Tracker 访问控制](https://developers.google.com/issue-tracker/concepts/access-control)
+
+本报告中的 API 34 模拟器记录只证明当前 `2.0.0` demo 的一次本地纵向嵌套边界拖动表现符合预期；它不代表 Google 上游问题已修复，也没有覆盖原问题的所有复现条件。
 
 ## 官方资料
 
@@ -58,3 +67,6 @@ com.github.Cormor.ComposeOverscroll:overscroll_core:2.0.0
 - [AGP 9.4.0 发行说明](https://developer.android.com/build/releases/agp-9-4-0-release-notes)
 - [AGP 内置 Kotlin 迁移说明](https://developer.android.com/build/migrate-to-built-in-kotlin)
 - [JitPack Android 发布说明](https://docs.jitpack.io/android/)
+- [JitPack 多模块构建说明](https://docs.jitpack.io/building/)
+- [Google Issue Tracker 访问说明](https://developers.google.com/issue-tracker/guides/access-ui)
+- [Google Issue Tracker 访问控制](https://developers.google.com/issue-tracker/concepts/access-control)
