@@ -14,7 +14,7 @@ com.github.Cormor:ComposeOverscroll:2.0.0
 
 旧项目使用 Compose `1.5.0`–`1.12.1` 时，可用 `com.github.Cormor:ComposeOverscroll:1.3.1`。JitPack 已成功构建这个根项目坐标，实际远端 AAR 通过独立消费者完整构建和 API 34 模拟器滚动检查；JitPack 没有提供对应的 `overscroll_core` 模块路径。用该 AAR 做的 11 个 Compose 代表版本本地矩阵也全部通过编译和 `1.5.0` 起的运行检查。`1.3.3` 和 `1.4.3` 虽能编译预制 AAR 消费者，但源码编译失败，运行时也因 Compose Runtime 缺少 `PrimitiveSnapshotStateKt` 而崩溃，因此不支持。
 
-`2.0.0` 和 `1.3.1` 都使用 JitPack 根项目坐标；`2.0.0` 的模块坐标 `com.github.Cormor.ComposeOverscroll:overscroll_core:2.0.0` 仍返回 404，`1.3.1` 的同类模块路径也返回 404。Google 问题 `276682419` 的用户截图显示状态为 `Won't fix (Obsolete)`，这不是“已修复”；视频不足以确认具体速度异常是否仍能复现。问题 `261895103` 的当前状态仍无法读取。
+`2.0.0` 和 `1.3.1` 都使用 JitPack 根项目坐标；`2.0.0` 的模块坐标 `com.github.Cormor.ComposeOverscroll:overscroll_core:2.0.0` 仍返回 404，`1.3.1` 的同类模块路径也返回 404。关于 Google 问题 `276682419`，用户提供的截图显示工单字段为 `Won't fix (Obsolete)`；另有当前 AndroidX 主线回归测试通过的证据，因此本报告将“当前主线上的 nested-scroll fling 方向反转回归”标记为已修复，但不把 Google 工单字段说成 `Fixed`。问题 `261895103` 的当前状态仍无法读取。
 
 ## 最新稳定版和构建要求
 
@@ -83,15 +83,23 @@ com.github.Cormor:ComposeOverscroll:2.0.0
 
 ## Google Issue Tracker 状态核查
 
-README 旧版列出了 [问题 276682419](https://issuetracker.google.com/issues/276682419) 和 [问题 261895103](https://issuetracker.google.com/issues/261895103)，并称 `1.4.0-beta02` 起有嵌套手势分发错误。全仓没有该失败用例的测试模块，所以没有仓库内自动复现证据；README 已移除未经本仓验证的复现断言。
+README 旧版列出了 [问题 276682419](https://issuetracker.google.com/issues/276682419) 和 [问题 261895103](https://issuetracker.google.com/issues/261895103)，并称 `1.4.0-beta02` 起有嵌套手势分发错误。ComposeOverscroll 仓库本身没有这个上游失败用例的测试模块；README 已移除未经本仓验证的复现断言。本次改为直接验证 AndroidX 上游的嵌套滚动测试。
 
-用户提供的 276682419 截图显示问题标题为 **“Wrong velocity at compose 1.4.0 release”**，描述关联 Compose 1.4.0、`LazyColumn`/`nestedScroll` 和错误速度追踪的怀疑；右侧状态显示 **“Won't fix (Obsolete)”**。截图所示状态不是“已修复”，而是因过时而不予修复。当前环境未能从 Issue Tracker 页面读取更新后的在线状态，因此截图之后状态是否变化仍待确认。
+用户提供的 276682419 截图显示问题标题为 **“Wrong velocity at compose 1.4.0 release”**，描述关联 Compose 1.4.0、`LazyColumn`/`nestedScroll` 和错误速度追踪的怀疑；右侧状态显示 **“Won't fix (Obsolete)”**。这是截图上的工单字段状态，与当前源码是否通过回归测试分开记录。当前环境未能读取 Issue Tracker 的在线页面，因此不能确认截图之后字段是否变化；本次也没有修改 Google 工单。
+
+### AndroidX 上游回归测试
+
+- 在 AndroidX `frameworks/support` 的 `androidx-main` 分支提交 `0b4947f8ab42b78ef92f001563926e2d6eb0b83c` 上运行 `:compose:ui:ui:connectedAndroidDeviceTest`，runner 限定为 `androidx.compose.ui.input.nestedscroll.NestedScrollModifierTest`；目标设备是 API 34 的 `sdk_gphone64_x86_64` 模拟器 `emulator-5554`。
+- 结果：**34 项通过，0 失败、0 错误、0 跳过**，AndroidX 测试结果 XML 的 exit code 为 `0`。其中 Gerrit CL 2121433 引入的 `nestedScroll_movingTarget_velocityShouldRespectSign` 也通过。当前测试文件位于 [`NestedScrollModifierTest.kt`](https://android.googlesource.com/platform/frameworks/support/+/0b4947f8ab42b78ef92f001563926e2d6eb0b83c/compose/ui/ui/src/androidDeviceTest/kotlin/androidx/compose/ui/input/nestedscroll/NestedScrollModifierTest.kt#1005)。
+- 这是在官方 AndroidX 源码的本地稀疏 checkout 上执行的模拟器测试，不是 Google CI 结果。AndroidX 源码和测试文件未改动；本机补齐了所需 JDK、Kotlin/Native 和 Android SDK 工具链，并只在隔离副本中为本次下载的两个外部依赖记录 SHA-256，Gradle strict 依赖校验一直开启。
+- 该用例在 nested-scroll `LazyColumn` 移动目标上分别执行向上、向下 swipe，并检查 `onPreFling` 收到的速度符号是否与手势方向一致。这直接覆盖“fling 方向反转”这一部分；没有比较速度的绝对值，也没有专门构造用户所说的“小幅度、较快”触摸轨迹。
+- 结合该上游回归用例通过，以及用户反馈本机目前不再复现，本报告将**当前 AndroidX 主线的 nested-scroll fling 方向反转回归**标记为“已修复（回归测试通过）”。这不追溯保证 Compose 1.4.0 的每个补丁版本，也不表示 Google Issue Tracker 的 `276682419` 字段已改为 `Fixed`；精确快速短距离轨迹和速度大小仍未由该单测验证。
 
 同时核查了用户提供的 `飞书20230224-153314.mp4` 和 `2023-04-04_11-21-27.mp4`。第一段录屏能看到嵌套列表在约 10–12 秒间发生滚动，内层与外层列表位置有变化；第二段显示重复的列表内容和滚动画面。视频没有提供触摸采样、输入速度或逐帧位移标定，也没有对照组，不能单凭画面验证“速度追踪器错误”、测量速度偏差或证明缺陷已修复。
 
-因此，对问题 276682419 的结论是：截图所示状态为 **Won't fix (Obsolete)**；录屏显示曾报告的滚动场景，但不足以判断速度异常是否仍能复现。对问题 261895103，当前页面只显示登录入口，本次仍无法确认其状态。Google Issue Tracker 的访问说明指出，问题详情会受公开性和权限控制；页面不可见本身不能证明问题已关闭或仍开放。[访问 Issue Tracker](https://developers.google.com/issue-tracker/guides/access-ui) [Issue Tracker 访问控制](https://developers.google.com/issue-tracker/concepts/access-control)
+因此，对问题 276682419 要分开看：用户截图里的工单字段为 **Won't fix (Obsolete)**；本次 AndroidX 主线的速度方向回归测试则通过，所以当前主线的方向反转问题按上述范围标记为已修复。用户视频没有触摸采样、输入速度或逐帧位移标定，不能单凭画面验证异常速度大小。对问题 261895103，当前页面只显示登录入口，本次仍无法确认其状态。Google Issue Tracker 的访问说明指出，问题详情会受公开性和权限控制；页面不可见本身不能证明问题已关闭或仍开放。[访问 Issue Tracker](https://developers.google.com/issue-tracker/guides/access-ui) [Issue Tracker 访问控制](https://developers.google.com/issue-tracker/concepts/access-control)
 
-API 34 模拟器矩阵只覆盖一个调用 overscroll modifier 的独立纵向滚动 app 和一次合成滚动手势；它不代表 Google 上游问题已修复，也没有覆盖原问题的所有嵌套手势和速度条件。
+ComposeOverscroll 的 API 34 模拟器矩阵只覆盖一个调用 overscroll modifier 的独立纵向滚动 app 和一次合成滚动手势；AndroidX 上游 nested-scroll 测试另在同版本 API 34 模拟器上单独执行。上游类测试通过不等于 ComposeOverscroll 的所有嵌套手势和速度条件都已覆盖。
 
 ## 官方资料
 

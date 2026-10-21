@@ -87,7 +87,7 @@ Column(Modifier
 
 ### Google Issue Tracker
 
-仓库关联的问题 `276682419` 的截图状态为 **Won't fix (Obsolete)**，这不等于已修复；配套录屏也不足以确认当前 Compose 是否仍存在速度异常。问题 `261895103` 的状态仍未能核实。证据和限制见[兼容性报告](docs/compose-compatibility-2026-10-21.md)。
+用户提供的问题 `276682419` 截图显示 **Won't fix (Obsolete)**。2026-10-21，我们在 API 34 模拟器上运行了 AndroidX `androidx-main` 的整个 `NestedScrollModifierTest`：34 项全通过，包括检查 fling 方向的 `nestedScroll_movingTarget_velocityShouldRespectSign`。因此本仓把“当前 AndroidX 主线的 nested-scroll 方向反转回归”标记为已修复。该测试没有覆盖精确的小幅快速手势或速度大小，Google 工单状态也未更改。问题 `261895103` 仍无法核实。证据和限制见[兼容性报告](docs/compose-compatibility-2026-10-21.md)。
 
 https://issuetracker.google.com/issues/276682419
 https://issuetracker.google.com/issues/261895103
