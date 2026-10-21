@@ -44,7 +44,7 @@ com.github.Cormor.ComposeOverscroll:overscroll_core:2.0.0
 - `:overscroll_core:publishReleasePublicationToMavenLocal`：**通过**。在仓库 `build/` 下的临时 Maven 仓库生成 `overscroll_core-2.0.0.aar`、POM、Gradle Module Metadata 和 sources JAR。POM 中的坐标与 README 示例一致，Compose API 依赖版本均为 1.12.1。
 - 独立消费者 APK：**通过**。临时 Android app 只通过本地 Maven 仓库使用 `com.github.Cormor.ComposeOverscroll:overscroll_core:2.0.0`，没有引用 `:overscroll_core` project dependency 或本仓库源码；消费者代码调用了 `Modifier.overScrollVertical()`。首次用 `minSdk 21` 打包时，Manifest 合并报告 Compose `foundation-layout` 要求 API 23；库最低版本据此改为 23。重新发布 AAR 并将消费者 `minSdk` 设为 23 后，`assembleDebug` 成功；API 21–22 不兼容已由该检查确认。
 - `:app:assembleDebug`：**通过**。Compose 1.12.1 下 demo app 成功构建。
-- API 34（Android 14）模拟器：**通过基础滚动检查**。debug app 安装启动后，灰色 LazyColumn 从可见的 `Item 0`–`Item 22` 滑到 `Item 30`–`Item 49`；检查该进程的相关 logcat 窗口未发现 `FATAL EXCEPTION`。这次没有验证 API 37 模拟器、最低 API 21 设备、所有嵌套滚动边界或 JitPack 远端构建；也没有运行自动化测试。
+- API 34（Android 14）模拟器：**通过基础滚动和一次边界回弹检查**。debug app 安装启动后，灰色 LazyColumn 从可见的 `Item 0`–`Item 22` 滑到 `Item 30`–`Item 49`。重新安装当前构建后，在灰色列表顶部向下拖动，外层内容随之下移；释放后内容回到原位，应用进程仍在运行，最近 400 条 `AndroidRuntime:E` 查询没有错误输出。这只覆盖当前 demo 的一次纵向嵌套边界操作；没有验证 API 37 模拟器、最低 API 23 设备、所有嵌套滚动边界或 JitPack 远端构建，也没有运行自动化测试。
 - Gradle 首次检查 SDK 时自动创建了 Android SDK Platform 37.0（API 37，Extension Level 22）和 Build-Tools 36.0.0。后续构建通过 `android.builder.sdkDownload=false` 禁止继续自动下载；本次没有删除这些 SDK 文件。
 
 ## 官方资料
