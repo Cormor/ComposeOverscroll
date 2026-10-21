@@ -145,7 +145,7 @@ fun Modifier.overScrollOutOfBound(
 
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
                 // Found fling behavior in the wrong direction.
-                if (source != NestedScrollSource.Drag) {
+                if (source != NestedScrollSource.UserInput) {
                     return dispatcher.dispatchPreScroll(available, source)
                 }
                 if (::lastFlingAnimator.isInitialized && lastFlingAnimator.isRunning) {
@@ -184,7 +184,7 @@ fun Modifier.overScrollOutOfBound(
 
             override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
                 // Found fling behavior in the wrong direction.
-                if (source != NestedScrollSource.Drag) {
+                if (source != NestedScrollSource.UserInput) {
                     return dispatcher.dispatchPreScroll(available, source)
                 }
                 val realAvailable = when {
